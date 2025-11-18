@@ -2,6 +2,7 @@ const API_USERS = 'https://691488943746c71fe0489e1c.mockapi.io/api/users/users';
 const API_ROOMS = 'https://691485293746c71fe04891b2.mockapi.io/api/rooms/rooms';
 const API_RESERVATIONS = 'https://691484693746c71fe0488f7d.mockapi.io/api/reservations/reservations';
 
+// creo que los arrays no nos sirven, hay que hacer consultas a las APIs y operar directamente con la respuesta
 let usuarios = [];
 let habitaciones = [];
 let reservas = [];
