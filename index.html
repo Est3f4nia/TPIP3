@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Reservas - Hotel</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
+
 <body>
     <header>
         <div class="header-container">
             <div class="logo">Hotel Premium</div>
             <nav id="nav">
-                <ul id="navMenu">
-                </ul>
+                <ul id="navMenu"></ul>
+
                 <div class="user-info" id="userInfo" style="display: none;">
                     <span>Bienvenido: <strong id="userName"></strong></span>
                     <span class="user-badge" id="userRole"></span>
@@ -21,44 +23,42 @@
             </nav>
         </div>
     </header>
-
     <main id="mainContent">
-        <div id="authView" class="auth-container">
-            <form class="auth-form" id="authForm">
-                <h2 id="authTitle">Iniciar Sesión</h2>
-                
-                <div id="loginForm">
-                    <div class="form-group">
-                        <label for="loginEmail">Email:</label>
-                        <input type="email" id="loginEmail" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Contraseña:</label>
-                        <input type="password" id="loginPassword" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
-                    <div class="form-toggle">
-                        ¿No tienes cuenta? <a onclick="toggleAuthForm()">Regístrate aquí</a>
-                    </div>
-                </div>
+        <div id="alertContainer"></div>
 
-                <div id="registerForm" style="display: none;">
-                    <div class="form-group">
-                        <label for="registerName">Nombre:</label>
-                        <input type="text" id="registerName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="registerEmail">Email:</label>
-                        <input type="email" id="registerEmail" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="registerPassword">Contraseña:</label>
-                        <input type="password" id="registerPassword" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Registrarse</button>
-                    <div class="form-toggle">
-                        ¿Ya tienes cuenta? <a onclick="toggleAuthForm()">Inicia sesión aquí</a>
-                    </div>
+        <div id="authView" class="auth-container">
+            <form class="auth-form" id="loginForm">
+                <h2>Iniciar Sesión</h2>
+                <div class="form-group">
+                    <label for="loginEmail">Email:</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="btn-iniciar">Iniciar Sesión</button>
+                <div class="form-toggle">
+                    ¿No tienes cuenta? <a onclick="toggleAuthForm()">Regístrate aquí</a>
+                </div>
+            </form>
+            <form class="auth-form" id="registerForm" style="display:none;">
+                <h2>Registrarse</h2>
+                <div class="form-group">
+                    <label for="registerName">Nombre:</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email:</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Contraseña:</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="btn-registrar">Registrarse</button>
+                <div class="form-toggle">
+                    ¿Ya tienes cuenta? <a onclick="toggleAuthForm()">Inicia sesión aquí</a>
                 </div>
             </form>
         </div>
@@ -68,12 +68,10 @@
                 <div class="container">
                     <div class="rooms-section">
                         <h2>Habitaciones Disponibles</h2>
-                        <div id="roomsContainer" class="rooms-grid">
-                        </div>
+                        <div id="roomsContainer" class="rooms-grid"></div>
                     </div>
                 </div>
             </div>
-
             <div id="reservationsView" style="display: none;">
                 <div class="container">
                     <div class="reservations-section">
@@ -91,18 +89,16 @@
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody id="reservationsBody">
-                                </tbody>
+                                <tbody id="reservationsBody"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div id="dashboardView" style="display: none;">
                 <div class="container">
-                    <h1 style="text-align: center; margin-bottom: 2rem; color: #2c3e50;">Dashboard</h1>
-                    
+                    <h1 style="text-align:center; margin-bottom:2rem; color:#2c3e50;">Dashboard</h1>
+
                     <div class="dashboard">
                         <div class="dashboard-card">
                             <h3>Total Habitaciones</h3>
@@ -121,11 +117,34 @@
                             <div class="number" id="cancelledReservations">0</div>
                         </div>
                     </div>
+                    <canvas id="reservationsChart" width="400" height="180" style="margin-top:2rem;"></canvas>
                 </div>
             </div>
+            <div id="adminRoomsView" style="display:none;">
+                <div class="container">
+                    <h2>Administrar Habitaciones</h2>
+
+                    <button class="btn btn-primary" id="addRoomBtn">Agregar Habitación</button>
+
+                    <div class="table-responsive" style="margin-top:1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Precio</th>
+                                    <th>Disponible</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminRoomsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
-
 
     <div id="reservationModal" class="modal">
         <div class="modal-content">
@@ -147,8 +166,57 @@
                     <input type="date" id="reservationCheckOut" required>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('reservationModal')">Cancelar</button>
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('reservationModal')">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Confirmar Reserva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editReservationModal" class="modal">
+        <div class="modal-content">
+            <h2>Editar Reserva</h2>
+            <form id="editReservationForm">
+                <div class="form-group">
+                    <label for="editEstado">Estado:</label>
+                    <select id="editEstado">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('editReservationModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="roomModal" class="modal">
+        <div class="modal-content">
+            <h2 id="roomModalTitle">Nueva Habitación</h2>
+            <form id="roomForm">
+                <div class="form-group">
+                    <label for="roomTipo">Tipo:</label>
+                    <input type="text" id="roomTipo" required>
+                </div>
+                <div class="form-group">
+                    <label for="roomPrecio">Precio:</label>
+                    <input type="number" id="roomPrecio" required>
+                </div>
+                <div class="form-group">
+                    <label for="roomDisponible">Disponible:</label>
+                    <select id="roomDisponible" required>
+                        <option value="true">Sí</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('roomModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
         </div>
@@ -158,6 +226,7 @@
         <p>&copy; 2025 Hotel Premium - Sistema de Reservas</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script type="module" src="./js/script.js"></script>
 </body>
+
 </html>
