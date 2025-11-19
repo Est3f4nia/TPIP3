@@ -72,6 +72,10 @@
                 <div class="container">
                     <div class="rooms-section">
                         <h2>Habitaciones Disponibles</h2>
+
+                        <div style="text-align: center; margin-bottom: 1rem;">
+                            <button class="btn btn-secondary" id="btnVerReservas">Ver Mis Reservas</button>
+                        </div>
                         <div id="roomsContainer" class="rooms-grid"></div>
                     </div>
                 </div>
@@ -80,6 +84,9 @@
                 <div class="container">
                     <div class="reservations-section">
                         <h2>Mis Reservas</h2>
+                        <div style="text-align: center; margin-bottom: 1rem;">
+                            <button class="btn btn-secondary" id="btnUserHabitaciones">Ver Habitaciones</button>
+                        </div>
                         <div class="alertContainer"></div>
                         <div class="table-responsive">
                             <table>
@@ -150,7 +157,7 @@
 
     <div id="reservationModal" class="modal">
         <div class="alertContainer"></div>
-        
+
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Nueva Reserva</h2>
