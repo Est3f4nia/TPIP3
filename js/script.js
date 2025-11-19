@@ -2,6 +2,7 @@ import { User } from './classes/User.js';
 import { Room } from './classes/Room.js';
 import { Reservation } from './classes/Reservation.js';
 
+// ** APIs CONSOLIDADAS **
 const API_USERS = 'https://691d039cd58e64bf0d34b8a1.mockapi.io/users/users';
 const API_ROOMS = 'https://691d039cd58e64bf0d34b8a1.mockapi.io/users/rooms';
 const API_RESERVATIONS = 'https://691484693746c71fe0488f7d.mockapi.io/api/reservations/reservations';
@@ -31,16 +32,17 @@ window.addEventListener('click', (event) => {
 function mostrarAlerta(mensaje, tipo = 'info') {
     const alertContainer = document.querySelector('.alertContainer') || document.body;
 
-    const alert = document.createElement('div');
-    alert.className = alert alert-${tipo};
-    alert.innerHTML = `
+    // FIX: Renombrada la variable 'alert' a 'customAlertElement' para evitar SyntaxError en ES Modules.
+    const customAlertElement = document.createElement('div');
+    customAlertElement.className = `alert alert-${tipo}`;
+    customAlertElement.innerHTML = `
         ${mensaje}
         <button type="button" class="alert-close" onclick="this.parentElement.remove()">&times;</button>
     `;
 
-    alertContainer.insertBefore(alert, alertContainer.firstChild);
+    alertContainer.insertBefore(customAlertElement, alertContainer.firstChild);
 
-    setTimeout(() => alert.remove(), 5000);
+    setTimeout(() => customAlertElement.remove(), 5000);
 }
 
 /* ================================ */
@@ -161,6 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('dashboardView').style.display = 'block';
                 actualizarEstadisticasDirecto();
             } else {
+                // Si es usuario normal, es el botón de "Ver habitaciones"
                 verHabitaciones();
             }
         });
@@ -204,7 +207,7 @@ async function manejarLogin(e) {
         document.getElementById('loginForm').reset();
         mostrarVistaPrincipal();
 
-        mostrarAlerta(Bienvenido ${usuario.nombre}, 'success');
+        mostrarAlerta(`Bienvenido ${usuario.nombre}`, 'success');
     } catch (err) {
         console.error(err);
         mostrarAlerta('Error al conectar con el servidor', 'error');
@@ -235,7 +238,7 @@ async function crearUsuario(e) {
             body: JSON.stringify(userData)
         });
 
-        if (!response.ok) throw new Error(Error: ${response.status});
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
 
         mostrarAlerta('Registro exitoso. Inicia sesión.', 'success');
         document.getElementById('registerForm').reset();
@@ -402,7 +405,7 @@ async function crearReserva(e) {
                 disponible: false // Se marca como no disponible al reservar
             };
 
-            const response = await fetch(${API_ROOMS}/${roomId}, {
+            const response = await fetch(`${API_ROOMS}/${roomId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedRoom)
@@ -424,7 +427,7 @@ async function crearReserva(e) {
 }
 
 function abrirReserva(roomId, tipo, precio) {
-    document.getElementById('reservationRoomId').value = ${roomId} - ${tipo};
+    document.getElementById('reservationRoomId').value = `${roomId} - ${tipo}`;
     document.getElementById('reservationCheckIn').value = '';
     document.getElementById('reservationCheckOut').value = '';
     document.getElementById('reservationModal').dataset.roomId = roomId;
@@ -471,7 +474,7 @@ function mostrarReservas() {
             <td>${res.checkOut}</td>
             <td><span class="status-badge ${res.estado}">${res.estado}</span></td>
             <td>
-                ${res.estado !== 'cancelada' ? <button class="btn btn-danger btn-small btn-cancelUser" data-reserva-id="${res.id}">Cancelar</button> : ''}
+                ${res.estado !== 'cancelada' ? `<button class="btn btn-danger btn-small btn-cancelUser" data-reserva-id="${res.id}">Cancelar</button>` : ''}
             </td>
         `;
 
@@ -484,7 +487,7 @@ function mostrarReservas() {
     });
 }
 
-// * FUNCIÓN DE CANCELAR RESERVA DE USUARIO (USANDO LÓGICA DE script2.js - PUT con estado 'cancelada') *
+// ** FUNCIÓN DE CANCELAR RESERVA DE USUARIO (USANDO LÓGICA DE script2.js - PUT con estado 'cancelada') **
 async function cancelarReserva(reservaId) {
     if (!confirm('¿Cancelar esta reserva?')) return;
 
@@ -501,7 +504,7 @@ async function cancelarReserva(reservaId) {
 
     try {
         // 1. Actualizar estado de la reserva a 'cancelada'
-        const response = await fetch(${API_RESERVATIONS}/${reservaId}, {
+        const response = await fetch(`${API_RESERVATIONS}/${reservaId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedReserva)
@@ -521,7 +524,7 @@ async function cancelarReserva(reservaId) {
                     disponible: true
                 };
 
-                await fetch(${API_ROOMS}/${reserva.roomId}, {
+                await fetch(`${API_ROOMS}/${reserva.roomId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updatedRoom)
@@ -694,7 +697,7 @@ async function handleCreateRoom(e) {
     }
 }
 
-// * VISTA DE RESERVAS PARA ADMIN *
+// ** VISTA DE RESERVAS PARA ADMIN **
 async function verReservasAdmin() {
     document.getElementById('dashboardView').style.display = 'none';
     document.getElementById('roomsView').style.display = 'none';
@@ -749,7 +752,7 @@ async function renderAdminReservationsTable() {
                 <td>${res.checkOut}</td>
                 <td><span class="status-badge ${res.estado}">${res.estado}</span></td>
                 <td>
-                    ${res.estado !== 'cancelada' ? <button class="btn btn-danger btn-small btn-cancelAdmin" data-id="${res.id}">Cancelar</button> : ''}
+                    ${res.estado !== 'cancelada' ? `<button class="btn btn-danger btn-small btn-cancelAdmin" data-id="${res.id}">Cancelar</button>` : ''}
                 </td>
             `;
 
@@ -784,13 +787,13 @@ function cancelarReservaAdminPrompt() {
     cancelReservaAdmin(id);
 }
 
-// * FUNCIÓN DE CANCELAR RESERVA DE ADMIN *
+// ** FUNCIÓN DE CANCELAR RESERVA DE ADMIN **
 async function cancelReservaAdmin(reservaId) {
-    if (!confirm(¿Está seguro de cancelar la reserva ID: ${reservaId}?)) return;
+    if (!confirm(`¿Está seguro de cancelar la reserva ID: ${reservaId}?`)) return;
 
     try {
         // 1. Obtener la reserva
-        const resGet = await fetch(${API_RESERVATIONS}/${reservaId});
+        const resGet = await fetch(`${API_RESERVATIONS}/${reservaId}`);
         if (!resGet.ok) {
             mostrarAlerta('Reserva no encontrada', 'error');
             return;
@@ -800,7 +803,7 @@ async function cancelReservaAdmin(reservaId) {
         reserva.estado = 'cancelada';
 
         // 2. Actualizar estado de la reserva a 'cancelada'
-        const resUpdate = await fetch(${API_RESERVATIONS}/${reservaId}, {
+        const resUpdate = await fetch(`${API_RESERVATIONS}/${reservaId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reserva)
@@ -810,12 +813,12 @@ async function cancelReservaAdmin(reservaId) {
 
         // 3. Liberar habitación si estaba confirmada
         if (eraConfirmada) {
-            const roomRes = await fetch(${API_ROOMS}/${reserva.roomId});
+            const roomRes = await fetch(`${API_ROOMS}/${reserva.roomId}`);
             if (roomRes.ok) {
                 const room = await roomRes.json();
                 room.disponible = true;
 
-                await fetch(${API_ROOMS}/${room.id}, {
+                await fetch(`${API_ROOMS}/${room.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(room)
@@ -823,7 +826,7 @@ async function cancelReservaAdmin(reservaId) {
             }
         }
 
-        mostrarAlerta(Reserva #${reservaId} cancelada por admin, 'success');
+        mostrarAlerta(`Reserva #${reservaId} cancelada por admin`, 'success');
         // Actualizar vistas del admin
         verReservasAdmin();
 
