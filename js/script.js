@@ -2,7 +2,6 @@ import { User } from './classes/User.js';
 import { Room } from './classes/Room.js';
 import { Reservation } from './classes/Reservation.js';
 
-// * APIs CONSOLIDADAS *
 const API_USERS = 'https://691d039cd58e64bf0d34b8a1.mockapi.io/users/users';
 const API_ROOMS = 'https://691d039cd58e64bf0d34b8a1.mockapi.io/users/rooms';
 const API_RESERVATIONS = 'https://691484693746c71fe0488f7d.mockapi.io/api/reservations/reservations';
@@ -162,7 +161,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('dashboardView').style.display = 'block';
                 actualizarEstadisticasDirecto();
             } else {
-                // Si es usuario normal, es el botón de "Ver habitaciones"
                 verHabitaciones();
             }
         });
