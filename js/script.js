@@ -1,22 +1,46 @@
-const API_USERS = 'https://691488943746c71fe0489e1c.mockapi.io/api/users/users';
-const API_ROOMS = 'https://691485293746c71fe04891b2.mockapi.io/api/rooms/rooms';
+import { User } from './classes/User.js';
+import { Room } from './classes/Room.js';
+import { Reservation } from './classes/Reservation.js';
+
+const API_USERS = 'https://691d039cd58e64bf0d34b8a1.mockapi.io/users/users';
+const API_ROOMS = 'https://691d039cd58e64bf0d34b8a1.mockapi.io/users/rooms';
 const API_RESERVATIONS = 'https://691484693746c71fe0488f7d.mockapi.io/api/reservations/reservations';
 
-// creo que los arrays no nos sirven, hay que hacer consultas a las APIs y operar directamente con la respuesta
-let usuarios = [];
 let habitaciones = [];
 let reservas = [];
 let usuarioActual = null;
 
-// ============================================
-// PARTE 1: AUTENTICACIÓN Y LOGIN
-// (Encargada: [Nombre persona 1])
-// ============================================
+// ================================
+// TOGGLE LOGIN / REGISTRO
+// ================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    cargarUsuarios();
+function toggleAuthForm() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
 
-    // Verificar si hay usuario guardado
+    if (loginForm.style.display === 'none') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    }
+}
+
+window.toggleAuthForm = toggleAuthForm;
+window.cerrarSesion = cerrarSesion;
+window.manejarLogin = manejarLogin;
+window.crearUsuario = crearUsuario;
+
+// ================================
+// INICIO: CARGA INICIAL
+// ================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log(API_ROOMS);
+console.log(`${API_ROOMS}/1`);
+
+
     const usuarioGuardado = localStorage.getItem('usuarioActual');
     if (usuarioGuardado) {
         usuarioActual = JSON.parse(usuarioGuardado);
@@ -25,144 +49,147 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarVistaLogin();
     }
 
-    // Event listeners
-    if (document.getElementById('authForm')) {
-        document.getElementById('authForm').addEventListener('submit', manejarLogin);
-    }
-
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', cerrarSesion);
-    }
+    // Listeners correctos
+    document.getElementById('loginForm').addEventListener('submit', manejarLogin);
+    document.getElementById('registerForm').addEventListener('submit', crearUsuario);
+    document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+    document.getElementById('reservationForm').addEventListener('submit', crearReserva);
 });
 
-// Cargar usuarios desde MockAPI
+// ================================
+// VISTAS
+// ================================
 
-// !!!) No conviene hacer un fetch(id user)? si el sistema crece tardaría mucho y ocuparía mucho el guardar TODOS los usuarios en la web
-async function cargarUsuarios() {
-    try {
-        const response = await fetch(API_USERS);
-        usuarios = await response.json();
-        console.log('Usuarios cargados:', usuarios);  // elminar después -> filtra BD en consola
-    } catch (error) {
-        console.error('Error al cargar usuarios:', error);
-        mostrarAlerta('Error al conectar con el servidor', 'error');
-    }
-}
-
-// Manejar login
-function manejarLogin(e) {
-    e.preventDefault(); // kiesesto
-
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    const usuario = usuarios.find(u => u.email === email && u.password === password); // acá en vez de trabajar con el array podríamos meter un fetch -> la función cargarUsuarios() se saca
-
-    if (usuario) {
-        usuarioActual = usuario;
-        localStorage.setItem('usuarioActual', JSON.stringify(usuario)); // manejo de cookie?
-        document.getElementById('authForm').reset();
-        mostrarVistaPrincipal();
-        mostrarAlerta('Bienvenido ' + usuario.nombre, 'success'); // cambiar alert por algo en el DOM
-    } else {
-        mostrarAlerta('Email o contraseña incorrectos', 'error'); // cambiar alert por algo en el DOM
-    }
-}
-
-// Mostrar vista de login
-function mostrarVistaLogin() {  // esto capaz hace conflicto con las inputs?
+function mostrarVistaLogin() {
     document.getElementById('authView').style.display = 'flex';
     document.getElementById('appView').style.display = 'none';
     document.getElementById('userInfo').style.display = 'none';
 }
 
-// Mostrar vista principal
 function mostrarVistaPrincipal() {
     document.getElementById('authView').style.display = 'none';
     document.getElementById('appView').style.display = 'block';
     document.getElementById('userInfo').style.display = 'flex';
 
     document.getElementById('userName').textContent = usuarioActual.nombre;
-    document.getElementById('userRole').textContent = usuarioActual.rol === 'admin' ? 'ADMIN' : 'USUARIO';  // explicaesto
+    document.getElementById('userRole').textContent = usuarioActual.role;
 
-    if (usuarioActual.rol === 'admin') { // cambia la vista según el rol?
+    if (usuarioActual.role === 'ADMIN') {
         document.getElementById('dashboardView').style.display = 'block';
         document.getElementById('roomsView').style.display = 'none';
         document.getElementById('reservationsView').style.display = 'none';
+        cargarDatos(); // stats + gráfico
     } else {
         document.getElementById('dashboardView').style.display = 'none';
         document.getElementById('roomsView').style.display = 'block';
         document.getElementById('reservationsView').style.display = 'none';
+        cargarHabitaciones(); // SOLO USUARIO
     }
 }
 
-// Cerrar sesión
+// ================================
+// LOGIN / REGISTRO
+// ================================
+
+async function manejarLogin(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        const response = await fetch(API_USERS);
+        if (!response.ok) throw new Error("Error al obtener usuarios.");
+
+        const users = await response.json();
+        const usuario = users.find(u => u.email === email);
+
+        if (!usuario) {
+            mostrarAlerta('Email no encontrado', 'error');
+            return;
+        }
+        if (usuario.password !== password) {
+            mostrarAlerta('Contraseña incorrecta', 'error');
+            return;
+        }
+
+        usuarioActual = new User(usuario.id, usuario.nombre, usuario.email, '', usuario.role);
+
+        localStorage.setItem('usuarioActual', JSON.stringify(usuarioActual));
+
+        document.getElementById('loginForm').reset();
+
+        mostrarVistaPrincipal();
+        mostrarAlerta(`Bienvenido ${usuario.nombre}`, 'success');
+
+    } catch (err) {
+        console.error(err);
+        mostrarAlerta('Error al conectar con el servidor', 'error');
+    }
+}
+
+async function crearUsuario(e) {
+    e.preventDefault();
+
+    const nombre = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+
+    const userData = { nombre, email, password, role: 'USUARIO' };
+
+    try {
+        const allRes = await fetch(API_USERS);
+        const allUsers = await allRes.json();
+
+        if (allUsers.some(u => u.email === email)) {
+            mostrarAlerta('El email ya está registrado', 'error');
+            return;
+        }
+
+        const response = await fetch(API_USERS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        });
+
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+        mostrarAlerta('Registro exitoso. Inicia sesión.', 'success');
+        document.getElementById('registerForm').reset();
+        toggleAuthForm();
+
+    } catch (err) {
+        console.error('Error al registrar:', err);
+        mostrarAlerta('Error al registrar usuario', 'error');
+    }
+}
+
 function cerrarSesion() {
     usuarioActual = null;
     localStorage.removeItem('usuarioActual');
-    document.getElementById('authForm').reset();
+
+    document.getElementById('loginForm')?.reset();
+
     mostrarVistaLogin();
-    mostrarAlerta('Sesión cerrada correctamente', 'success'); // no haría falta -> sacar para entregar
+    mostrarAlerta('Sesión cerrada correctamente', 'success');
 }
 
-async function crearUsuario() {
-    const name = document.getElementById("registerName").value;
-    const email = document.getElementById("registerEmail").value;
-    const pass = document.getElementById("registerPassword").value;
-
-    const u = new User(name, email, pass);
-
-    try {
-        const conn = await fetch("https://691488943746c71fe0489e1c.mockapi.io/api/users/users", {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(u)
-        });
-
-        if (!conn.ok) {
-            console.error('Error al crear usuario:', conn.status, await conn.text());
-            throw new Error();
-        }
-
-        const result = await conn.json();
-        console.log('Usuario creado:', result);
-    } catch (err) {
-        console.error('Error al conectarse a la API:', err);
-    }
-}
-
-// Cambiar entre login y registro
-function toggleAuthForm() {
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const authTitle = document.getElementById('authTitle');
-
-    // anda, pero me confunde el usar display para cambiar el form
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-        authTitle.textContent = 'Iniciar Sesión';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-        authTitle.textContent = 'Registrarse';
-    }
-}
-
-// ============================================
-// PARTE 2: HABITACIONES
-// (Encargada: [Nombre persona 2])
-// ============================================
+// ================================
+// HABITACIONES
+// ================================
 
 async function cargarHabitaciones() {
     try {
         const response = await fetch(API_ROOMS);
-        habitaciones = await response.json(); // mismo que con users -> podemos directamente usar for en la api o algo asi?
-        console.log('Habitaciones cargadas:', habitaciones);
+        if (!response.ok) throw new Error('Error en fetch');
+
+        habitaciones = await response.json();
+        habitaciones = habitaciones.map(r => new Room(r.id, r.tipo, r.precio, r.disponible));
+
         mostrarHabitaciones();
+
     } catch (error) {
-        console.error('Error al cargar habitaciones:', error);
+        console.error('Error:', error);
         mostrarAlerta('Error al cargar habitaciones', 'error');
     }
 }
@@ -174,57 +201,137 @@ function mostrarHabitaciones() {
     container.innerHTML = '';
 
     if (habitaciones.length === 0) {
-        container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">No hay habitaciones</p>';
+        container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No hay habitaciones</p>';
         return;
     }
 
     habitaciones.forEach(room => {
-        const disponible = room.disponible === true || room.disponible === 'true';
+        const disponible = room.disponible;
+
         const card = document.createElement('div');
         card.className = 'room-card';
 
-        // a lo mejor conviene evitar el innerHTML (buena práctica)
-        card.innerHTML = `
-            <div class="room-image">🛏️</div>
-            <div class="room-content">
-                <div class="room-type">${room.tipo}</div>
-                <div class="room-price">$${parseFloat(room.precio).toFixed(2)}<span>/noche</span></div>
-                <div class="room-status ${disponible ? 'available' : 'unavailable'}">
-                    ${disponible ? '✓ Disponible' : '✗ No disponible'}
-                </div>
-                <p class="room-description">Habitación cómoda con todas las comodidades.</p>
-                <div class="room-actions">
-                    <button class="btn btn-primary" onclick="abrirReserva(${room.id}, '${room.tipo}', ${room.precio})">
-                        Reservar
-                    </button>
-                </div>
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'room-image';
+        imageDiv.textContent = '🛏️';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'room-content';
+        contentDiv.innerHTML = `
+            <div class="room-type">${room.tipo}</div>
+            <div class="room-price">$${room.precio.toFixed(2)}<span> /noche</span></div>
+            <div class="room-status ${disponible ? 'available' : 'unavailable'}">
+                ${disponible ? 'Disponible' : 'No disponible'}
             </div>
         `;
+
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-primary';
+        btn.textContent = 'Reservar';
+        btn.onclick = () => abrirReserva(room.id, room.tipo, room.precio);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'room-actions';
+        actionsDiv.appendChild(btn);
+
+        contentDiv.appendChild(actionsDiv);
+
+        card.appendChild(imageDiv);
+        card.appendChild(contentDiv);
+
         container.appendChild(card);
     });
 }
 
-// display raro
-function loadRooms() {
-    document.getElementById('dashboardView').style.display = 'none';
-    document.getElementById('roomsView').style.display = 'block';
-    document.getElementById('reservationsView').style.display = 'none';
-    cargarHabitaciones();
+// ================================
+// RESERVAS (USUARIO NORMAL)
+// ================================
+
+async function crearReserva(e) {
+    e.preventDefault();
+
+    const modal = document.getElementById('reservationModal');
+    const roomId = Number(modal.dataset.roomId);
+    console.log('Crear reserva para habitación ID:', roomId);
+
+    const checkIn = document.getElementById('reservationCheckIn').value;
+    const checkOut = document.getElementById('reservationCheckOut').value;
+
+    if (!checkIn || !checkOut) {
+        mostrarAlerta("Completa las fechas.", "error");
+        return;
+    }
+    if (checkOut <= checkIn) {
+        mostrarAlerta("La fecha de salida debe ser posterior a la de entrada.", "error");
+        return;
+    }
+
+    const nuevaReserva = {
+        userId: usuarioActual.id,
+        roomId: roomId,
+        checkIn,
+        checkOut,
+        estado: "Confirmada"
+    };
+
+    try {
+        const resReserva = await fetch(API_RESERVATIONS, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevaReserva)
+        });
+        if (!resReserva.ok) throw new Error("Error al guardar reserva");
+
+        // Marcar habitación como no disponible
+        const habitacion = habitaciones.find(h => h.id == roomId);
+
+        if (habitacion) {
+            const updatedRoom = { 
+                tipo: habitacion.tipo,
+                precio: habitacion.precio,
+                disponible: false
+            };
+
+            await fetch(API_ROOMS, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedRoom)
+            });
+        }
+
+        mostrarAlerta("Reserva creada con éxito", "success");
+        closeModal("reservationModal");
+        cargarHabitaciones();
+        cargarReservas();
+
+    } catch (err) {
+        console.error('Error al crear reserva:', err);
+        mostrarAlerta('Error al crear reserva', 'error');
+    }
 }
 
-// ============================================
-// PARTE 3: RESERVAS
-// (Encargada: [Nombre persona 3])
-// ============================================
+
+function abrirReserva(roomId, tipo, precio) {
+    document.getElementById('reservationRoomId').value = `${roomId} - ${tipo}`;
+    document.getElementById('reservationCheckIn').value = '';
+    document.getElementById('reservationCheckOut').value = '';
+    document.getElementById('reservationModal').dataset.roomId = roomId;
+    document.getElementById('reservationModal').dataset.roomPrice = precio;
+    openModal('reservationModal');
+}
 
 async function cargarReservas() {
     try {
         const response = await fetch(API_RESERVATIONS);
+        if (!response.ok) throw new Error('Error en fetch');
+
         reservas = await response.json();
-        console.log('Reservas cargadas:', reservas);
+        reservas = reservas.map(r => new Reservation(r.id, r.userId, r.roomId, r.checkIn, r.checkOut, r.estado));
+
         mostrarReservas();
+
     } catch (error) {
-        console.error('Error al cargar reservas:', error);
+        console.error('Error:', error);
         mostrarAlerta('Error al cargar reservas', 'error');
     }
 }
@@ -235,16 +342,17 @@ function mostrarReservas() {
 
     tbody.innerHTML = '';
 
-    const misReservas = reservas.filter(r => r.userId == usuarioActual.id);
+    const misReservas = reservas.filter(r => r.userId === usuarioActual.id);
 
     if (misReservas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No tienes reservas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">No tienes reservas</td></tr>';
         return;
     }
 
     misReservas.forEach(res => {
-        const room = habitaciones.find(h => h.id == res.roomId);
+        const room = habitaciones.find(h => h.id === res.roomId);
         const row = document.createElement('tr');
+
         row.innerHTML = `
             <td>#${res.id}</td>
             <td>${room ? room.tipo : 'Habitación ' + res.roomId}</td>
@@ -255,43 +363,9 @@ function mostrarReservas() {
                 <button class="btn btn-danger btn-small" onclick="cancelarReserva(${res.id})">Cancelar</button>
             </td>
         `;
+
         tbody.appendChild(row);
     });
-}
-
-// esto crea un reserva? si sí entonces va como método de user
-
-function abrirReserva(roomId, tipo, precio) {
-    document.getElementById('reservationRoomId').value = `${roomId} - ${tipo}`;
-    document.getElementById('reservationCheckIn').value = '';
-    document.getElementById('reservationCheckOut').value = '';
-
-    document.getElementById('reservationModal').dataset.roomId = roomId;
-    document.getElementById('reservationModal').dataset.roomPrice = precio;
-
-    openModal('reservationModal');
-}
-
-
-// método de user
-async function cancelarReserva(reservaId) {
-    if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
-
-    try {
-        const response = await fetch(`${API_RESERVATIONS}/${reservaId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ estado: 'cancelada' })
-        });
-
-        if (response.ok) {
-            mostrarAlerta('Reserva cancelada', 'success');
-            cargarReservas();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        mostrarAlerta('Error al cancelar', 'error');
-    }
 }
 
 function loadReservations() {
@@ -301,45 +375,82 @@ function loadReservations() {
     cargarReservas();
 }
 
-// ============================================
-// PARTE 4: DASHBOARD ADMIN
-// (Encargada: [Nombre persona 4])
-// ============================================
+async function cancelarReserva(reservaId) {
+    if (!confirm('¿Cancelar esta reserva?')) return;
+
+    const reserva = reservas.find(r => r.id === reservaId && r.userId === usuarioActual.id);
+    if (!reserva) {
+        mostrarAlerta('No puedes cancelar esta reserva', 'error');
+        return;
+    }
+
+    reserva.setEstado('Cancelada');
+
+    try {
+        await fetch(`${API_RESERVATIONS}/${reservaId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reserva.toJSON())
+        });
+
+        mostrarAlerta('Reserva cancelada', 'success');
+        cargarReservas();
+
+    } catch (err) {
+        console.error(err);
+        mostrarAlerta('Error al cancelar', 'error');
+    }
+}
+
+// ================================
+// DASHBOARD ADMIN
+// ================================
 
 async function cargarDatos() {
     await Promise.all([cargarHabitaciones(), cargarReservas()]);
     actualizarEstadisticas();
+    renderGrafico();
 }
 
 function actualizarEstadisticas() {
-    const totalHabitaciones = habitaciones.length;
-    const reservasConfirmadas = reservas.filter(r => r.estado === 'confirmada').length;
-    const reservasPendientes = reservas.filter(r => r.estado === 'pendiente').length;
-    const reservasCanceladas = reservas.filter(r => r.estado === 'cancelada').length;
-
-    document.getElementById('totalRooms').textContent = totalHabitaciones;
-    document.getElementById('confirmedReservations').textContent = reservasConfirmadas;
-    document.getElementById('pendingReservations').textContent = reservasPendientes;
-    document.getElementById('cancelledReservations').textContent = reservasCanceladas;
+    document.getElementById('totalRooms').textContent = habitaciones.length;
+    document.getElementById('confirmedReservations').textContent = reservas.filter(r => r.estado === 'confirmada').length;
+    document.getElementById('pendingReservations').textContent = reservas.filter(r => r.estado === 'pendiente').length;
+    document.getElementById('cancelledReservations').textContent = reservas.filter(r => r.estado === 'cancelada').length;
 }
 
-function showDashboard() {
-    if (usuarioActual.rol !== 'admin') {
-        mostrarAlerta('Solo administradores', 'error');
-        return;
-    }
+function renderGrafico() {
+    const canvas = document.getElementById('reservationsChart');
+    if (!canvas) return;
 
-    document.getElementById('dashboardView').style.display = 'block';
-    document.getElementById('roomsView').style.display = 'none';
-    document.getElementById('reservationsView').style.display = 'none';
-    cargarDatos();
+    const ctx = canvas.getContext('2d');
+    const confirmadas = reservas.filter(r => r.estado === 'confirmada').length;
+    const pendientes = reservas.filter(r => r.estado === 'pendiente').length;
+    const canceladas = reservas.filter(r => r.estado === 'cancelada').length;
+
+    const data = [pendientes, confirmadas, canceladas];
+    const labels = ['Pendientes', 'Confirmadas', 'Canceladas'];
+    const colors = ['#FFA500', '#008000', '#FF0000'];
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const barWidth = canvas.width / data.length / 2;
+
+    data.forEach((value, index) => {
+        const barHeight = (value / Math.max(...data)) * (canvas.height - 20);
+        ctx.fillStyle = colors[index];
+        ctx.fillRect(index * canvas.width / data.length + barWidth / 2, canvas.height - barHeight, barWidth, barHeight);
+        ctx.fillStyle = '#000';
+        ctx.fillText(labels[index], index * canvas.width / data.length + barWidth / 2, canvas.height - 5);
+        ctx.fillText(value, index * canvas.width / data.length + barWidth / 2 + 10, canvas.height - barHeight - 5);
+    });
 }
 
-// ============================================
-// UTILIDADES GENERALES
-// ============================================
+// ================================
+// MODALES & UTILIDADES
+// ================================
 
-// de esto no entedí nada
+
 
 function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
@@ -356,7 +467,7 @@ window.addEventListener('click', (event) => {
 });
 
 function mostrarAlerta(mensaje, tipo = 'info') {
-    const alertContainer = document.getElementById('alertContainer') || document.querySelector('.container') || document.body;
+    const alertContainer = document.querySelector('.alertContainer') || document.body;
 
     const alert = document.createElement('div');
     alert.className = `alert alert-${tipo}`;
@@ -365,19 +476,7 @@ function mostrarAlerta(mensaje, tipo = 'info') {
         <button type="button" class="alert-close" onclick="this.parentElement.remove()">&times;</button>
     `;
 
-    if (alertContainer) {
-        alertContainer.insertBefore(alert, alertContainer.firstChild);
-    }
+    alertContainer.insertBefore(alert, alertContainer.firstChild);
 
-    setTimeout(() => {
-        if (alert.parentElement) {
-            alert.remove();
-        }
-    }, 4000);
+    setTimeout(() => alert.remove(), 5000);
 }
-
-// Event listeners
-
-document.getElementById("btn-registrar").addEventListener("click", () => {
-    crearUsuario();
-})
