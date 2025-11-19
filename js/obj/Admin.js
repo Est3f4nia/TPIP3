@@ -1,132 +1,84 @@
-import { User } from './User.js';
-import { Room } from './Room.js';
-import { Reservation } from './Reservation.js';
+import User from './User.js';
+import Room from './Room.js';
+import Reservation from './Reservation.js';
+
+const API_USERS = 'https://691488943746c71fe0489e1c.mockapi.io/api/users/users';
+const API_ROOMS = 'https://691488943746c71fe0489e1c.mockapi.io/api/rooms/rooms';
+const API_RESERVATIONS = 'https://691488943746c71fe0489e1c.mockapi.io/api/reservations/reservations';
 
 class Admin extends User {
-    constructor(name, email, pass, role = 'admin') {
-        super(name, email, pass);
-        this.role = role;
-    }
-
-    async crearUsuario() {
-        const name = document.getElementById("name").value;
-        const email = document.getElementById("email").value;
-        const pass = document.getElementById("pass").value;
-
-        const u = new User(name, email, pass);
-
-        try {
-            const conn = await fetch("https://691488943746c71fe0489e1c.mockapi.io/api/users/users", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(u)
-            });
-
-            if (!conn.ok) {
-                console.error('Error al crear usuario:', conn.status, await conn.text());
-                return;
-            }
-
-            const result = await conn.json();
-            console.log('Usuario creado:', result);
-        } catch (err) {
-            console.error('Fetch error:', err);
-        }
+    constructor(id, nombre, email, password, role = 'ADMIN') {
+        super(id, nombre, email, password, role)
     }
 
     async deleteUser(userId) {
         try {
-            const conn = await fetch(`https://691488943746c71fe0489e1c.mockapi.io/api/users/users/${userId}`, {
-                method: "DELETE",
+            const response = await fetch(`${API_USERS}/${userId}`, {
+                method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
 
-            if (!conn.ok) {
-                console.error('Error al eliminar:', conn.status);
-                return;
-            }
-
+            if (!response.ok) throw new Error(`Error al eliminar: ${response.status}`);
             console.log('Usuario eliminado');
+            // DOM
         } catch (err) {
             console.error('Error:', err);
+            alert('Error al eliminar usuario');
         }
     }
 
-    async deleteUser(userId) {
-        try {
-            const conn = await fetch(`https://691488943746c71fe0489e1c.mockapi.io/api/users/users/${userId}`, {
-                method: "DELETE",
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (!conn.ok) {
-                console.error('Error al eliminar:', conn.status);
-                return;
-            }
-
-            console.log('Usuario eliminado');
-        } catch (err) {
-            console.error('Error:', err);
-        }
-    }
-
-    async crearRoom() {
-        const tipo = document.getElementById("tipo").value;
-        const precio = document.getElementById("precio").value;
-        const disponible = document.getElementById("disponible").value;
-
-        const r = new Room(tipo, precio, disponible);
+    async crearRoom(tipo, precio, disponible) {
+        const roomData = { tipo, precio, disponible };
 
         try {
-            const conn = await fetch("https://691488943746c71fe0489e1c.mockapi.io/api/rooms/rooms", {
-                method: "POST",
+            const response = await fetch(API_ROOMS, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(r)
+                body: JSON.stringify(roomData)
             });
 
-            if (!conn.ok) {
-                console.error('Error al crear la habitación:', conn.status, await conn.text());
-                return;
-            }
-
-            const result = await conn.json();
+            if (!response.ok) throw new Error(`Error al crear habitación: ${response.status}`);
+            // ver el tema de los logs en terminal
+            const result = await response.json();
             console.log('Habitación creada:', result);
+            return new Room(result.id, result.tipo, result.precio, result.disponible);  // Instancia con id
         } catch (err) {
-            console.error('Fetch error:', err);
+            console.error('Error:', err);
+            alert('Error al crear habitación');
         }
     }
 
-    async crearReservation() { // modificar, similar a crearRoom()
-
-        // falta comprobación de que userId y roomId existan en las APIs
-        const checkIn = document.getElementById("checkIn").value;
-        const checkOut = document.getElementById("checkOut").value;
-        const estado = document.getElementById("estado").value;
-
-        const r = new Room(userId, roomId, checkIn, checkOut, estado);
-
+    async crearReservation(userId, roomId, checkIn, checkOut, estado) {
         try {
-            const conn = await fetch("https://691488943746c71fe0489e1c.mockapi.io/api/reservations/reservations", {
-                method: "POST",
+            const userCheck = await fetch(`${API_USERS}/${userId}`);
+            if (!userCheck.ok) throw new Error('UserId no existe');
+            
+            const roomCheck = await fetch(`${API_ROOMS}/${roomId}`);
+            if (!roomCheck.ok) throw new Error('RoomId no existe');
+
+            const resData = { userId, roomId, checkIn, checkOut, estado };
+            const response = await fetch(API_RESERVATIONS, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(r)
+                body: JSON.stringify(resData)
             });
-
-            if (!conn.ok) {
-                console.error('Error al crear la reserva:', conn.status, await conn.text());
-                return;
+            
+            if (!response.ok) {
+                throw new Error(`Error al crear reserva: ${response.status}`);
             }
-
-            const result = await conn.json();
+            
+            const result = await response.json();
             console.log('Reserva creada:', result);
+            return new Reservation(result.id, result.userId, result.roomId, result.checkIn, result.checkOut, result.estado);
         } catch (err) {
-            console.error('Fetch error:', err);
+            console.error('Error:', err);
+            alert('Error al crear reserva');
         }
     }
 
     async cancelarReserva(reservaId) {
-        if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
-
+        if (!confirm('¿Estás seguro de cancelar esta reserva?')) return; // ???
+        
         try {
             const response = await fetch(`${API_RESERVATIONS}/${reservaId}`, {
                 method: 'PUT',
@@ -134,38 +86,53 @@ class Admin extends User {
                 body: JSON.stringify({ estado: 'cancelada' })
             });
 
-            if (response.ok) {
-                mostrarAlerta('Reserva cancelada', 'success');
-                cargarReservas();
+            if (!response.ok) {
+                throw new Error(`Error al cancelar: ${response.status}`);
             }
+            // esto no va, modificar en script.js
+            mostrarAlerta('Reserva cancelada', 'success');
+            cargarReservas();
         } catch (error) {
             console.error('Error:', error);
             mostrarAlerta('Error al cancelar', 'error');
         }
     }
 
-    async updatePrecio(roomId, precio) {
+    async updatePrecio(roomId, nuevoPrecio) {
         try {
-            const updatedData = { precio: precio };
-            const conn = await fetch(`https://691488943746c71fe0489e1c.mockapi.io/api/users/users/${roomId}`, {
-                method: "PUT",
+            const response = await fetch(`${API_ROOMS}/${roomId}`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedData)
+                body: JSON.stringify({ precio: nuevoPrecio })
             });
 
-            if (!conn.ok) {
-                console.error('Error al actualizar:', conn.status);
-                return;
-            }
+            if (!response.ok) throw new Error(`Error al actualizar: ${response.status}`);
 
-            const result = await conn.json();
-            console.log('Precio actualizado:', result);
+            const result = await response.json();
+            console.log('Precio actualizado:', result); // DOM
         } catch (err) {
             console.error('Error:', err);
+            alert('Error al actualizar precio');
         }
     }
 
-    // falta adm rooms y reservas
-}
+    async getAllRooms() {
+        try {
+            const response = await fetch(API_ROOMS);
+            if (!response.ok) throw new Error('Error al listar habitaciones');
+            return await response.json();  // Array
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
-export { Admin };
+    async getAllReservations() {
+        try {
+            const response = await fetch(API_RESERVATIONS);
+            if (!response.ok) throw new Error('Error al listar reservas');
+            return await response.json();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+}
