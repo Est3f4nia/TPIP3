@@ -24,7 +24,7 @@
         </div>
     </header>
     <main id="mainContent">
-        <div id="alertContainer"></div>
+        <div class="alertContainer"></div>
 
         <div id="authView" class="auth-container">
             <form class="auth-form" id="loginForm">
@@ -64,7 +64,11 @@
         </div>
 
         <div id="appView" style="display: none;">
+            <div class="alertContainer"></div>
+
             <div id="roomsView" style="display: none;">
+                <div class="alertContainer"></div>
+
                 <div class="container">
                     <div class="rooms-section">
                         <h2>Habitaciones Disponibles</h2>
@@ -76,7 +80,7 @@
                 <div class="container">
                     <div class="reservations-section">
                         <h2>Mis Reservas</h2>
-                        <div id="alertContainer"></div>
+                        <div class="alertContainer"></div>
                         <div class="table-responsive">
                             <table>
                                 <thead>
@@ -123,9 +127,7 @@
             <div id="adminRoomsView" style="display:none;">
                 <div class="container">
                     <h2>Administrar Habitaciones</h2>
-
                     <button class="btn btn-primary" id="addRoomBtn">Agregar Habitación</button>
-
                     <div class="table-responsive" style="margin-top:1rem;">
                         <table>
                             <thead>
@@ -147,6 +149,8 @@
     </main>
 
     <div id="reservationModal" class="modal">
+        <div class="alertContainer"></div>
+        
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Nueva Reserva</h2>
@@ -189,7 +193,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
                         onclick="closeModal('editReservationModal')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-reserva">Guardar</button>
                 </div>
             </form>
         </div>
