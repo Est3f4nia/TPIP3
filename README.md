@@ -1,2 +1,4 @@
-# <Nombre hotel acá> - Web
-Página web que permite administrar los usuarios y la reserva de habitaciones de un hotel.
+# About
+
+Aplicación web para la gestión de usuarios y reservas de habitaciones, con dashboard administrativo y persistencia de datos.
+
