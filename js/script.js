@@ -182,8 +182,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function manejarLogin(e) {
     e.preventDefault();
 
+    // ** CREDENCIALES DE PRUEBA **
+    var devEmail = "user@example.com";
+    var devName = "Usuario de Prueba";
+    var devPassword = "password";
+    var devRole = "USUARIO";
+
+    var adEmail = "admin@example.com";
+    var adName = "Administrador";
+    var adPassword = "password";
+    var adRole = "ADMIN";
+    // -------------------------------
+
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
+
+    // ** VALIDACIÓN DE CREDENCIALES DE PRUEBA (SIN CONEXIÓN A API) **
+    if (email === devEmail && password === devPassword) {
+        usuarioActual = new User(null, devName, devEmail, '', devRole);
+        localStorage.setItem('usuarioActual', JSON.stringify(usuarioActual));
+        
+        document.getElementById('loginForm').reset();
+        mostrarVistaPrincipal();
+
+        mostrarAlerta(`Bienvenido ${usuarioActual.nombre}`, 'success');
+    }
+
+    if (email === adEmail && password === adPassword) {
+        usuarioActual = new User(null, adName, adEmail, '', adRole);
+        localStorage.setItem('usuarioActual', JSON.stringify(usuarioActual));
+        
+        document.getElementById('loginForm').reset();
+        initAdminDashboard()
+
+        mostrarAlerta(`Bienvenido ${usuario.nombre}`, 'success');
+    }
+    // -------------------------------
 
     try {
         const response = await fetch(API_USERS);
